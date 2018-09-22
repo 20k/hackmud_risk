@@ -404,7 +404,7 @@ bool merge_together(match& in)
     return true;
 }
 
-std::vector<match> sort_overlap(const std::vector<parsed_data*>& all)
+std::vector<match> sort_overlap(const std::vector<parsed_data*>& all, std::map<std::string, std::map<std::string, bool>>& does_not_overlap)
 {
     std::vector<match> matches;
 
@@ -428,6 +428,9 @@ std::vector<match> sort_overlap(const std::vector<parsed_data*>& all)
             if(other->data == dat->data)
                 continue;
 
+            if(does_not_overlap[dat->data][other->data])
+                continue;
+
             //std::cout << "hi " << other->data << std::endl;
 
             result_info strength = overlap_strength(dat->data, other->data);
@@ -444,6 +447,10 @@ std::vector<match> sort_overlap(const std::vector<parsed_data*>& all)
                 m.hit = false;
 
                 matches.push_back(m);
+            }
+            else
+            {
+                does_not_overlap[dat->data][other->data] = true;
             }
         }
     }
@@ -522,9 +529,11 @@ struct parsed_data_manager
 
             //for(int num = 0; num < p.second.size()*5; num++)
 
+            std::map<std::string, std::map<std::string, bool>> does_not_overlap;
+
             while(should_go)
             {
-                std::vector<match> matches = sort_overlap(p.second);
+                std::vector<match> matches = sort_overlap(p.second, does_not_overlap);
 
                 //std::cout << "start matches " << matches.size() << std::endl;
 
@@ -547,8 +556,8 @@ struct parsed_data_manager
                     break;
                 }
 
-                if(matches.size() <= 1)
-                    break;
+                //if(matches.size() <= 1)
+                //    break;
             }
 
             //std::vector<match> matches = sort_overlap(p.second);
@@ -652,6 +661,11 @@ void tests()
 ogs_playing? ## Not f*/
 
     assert(full_test("ogs_playin", "ogs_playing? ## Not f") == "ogs_playing? ## Not f");
+
+    //. Petra permitt
+    //rators. Petra permitt
+
+    assert(full_test(". Petra permitt", "rators. Petra permitt") == "rators. Petra permitt");
 
     //std::cout << "pmerge " << full_test("1234", "3456") << " well" << std::endl;
 }
