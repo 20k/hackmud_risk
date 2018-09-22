@@ -158,8 +158,6 @@ struct parsed_data_manager
         {
             //std::vector<match> all_matches;
 
-            std::map<parsed_data*, std::vector<match>> all_matches;
-
             std::vector<match> matches;
 
             std::vector<parsed_data*> all = p.second;
@@ -176,9 +174,6 @@ struct parsed_data_manager
 
                     if(strength > 0)
                     {
-                        all_matches[dat].push_back({strength, dat, other, false});
-                        all_matches[other].push_back({strength, dat, other, false});
-
                         match m;
                         m.strength = strength;
                         m.s1 = dat;
@@ -189,13 +184,6 @@ struct parsed_data_manager
                     }
                 }
             }
-
-            /*for(auto& i : all_matches)
-            {
-                std::vector<match>& m = i.second;
-
-                std::sort(m.begin(), m.end(), [](const auto& i1, const auto& i2){return i1.strength > i2.strength;});
-            }*/
 
             std::sort(matches.begin(), matches.end(), [](const auto& i1, const auto& i2){return i1.strength > i2.strength;});
 
@@ -217,8 +205,6 @@ struct parsed_data_manager
 
                 matched[i.s1] = true;
                 matched[i.s2] = true;
-
-                //std::cout << "is1 " << i.s1->data << std::endl;
 
                 match fin;
                 fin.strength = i.strength;
