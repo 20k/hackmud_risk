@@ -43,12 +43,17 @@ struct result_info
     int idy = 0;
 
     int result = 0;
+    int which = -1;
+
+    std::string substring;
 };
 
 result_info lcsubstr(const std::string& s1, const std::string& s2)
 {
     int m = s1.size();
     int n = s2.size();
+
+    //std::cout << m << n <<std::endl;
 
     // Create a table to store lengths of longest common suffixes of
     // substrings.   Notethat LCSuff[i][j] contains length of longest
@@ -78,7 +83,7 @@ result_info lcsubstr(const std::string& s1, const std::string& s2)
                 LCSuff[i][j] = LCSuff[i-1][j-1] + 1;
                 //result = std::max(result, LCSuff[i][j]);
 
-                if(LCSuff[i][j] > inf.result)
+                if(LCSuff[i][j] >= inf.result)
                 {
                     inf.result = LCSuff[i][j];
                     inf.idx = i;
@@ -91,16 +96,41 @@ result_info lcsubstr(const std::string& s1, const std::string& s2)
     return inf;
 }
 
-result_info overlap_strength(const std::string& s1, const std::string& s2)
+/*bool starts_with(const std::string& s1, const std::string& s2)
 {
-    result_info inf = lcsubstr(s1, s2);
+    if(s1.size() < s2.size())
+        return false;
 
-    if(inf.result != inf.idx && inf.result != inf.idy)
+    for(int i=0; i < (int)s1.size() ; i++)
     {
-        inf.result = 0;
+        if(s1[i] != s2[i])
+            return false;
     }
 
-    return inf;
+    return true;
+}*/
+
+bool ends_with(const std::string& s1, const std::string& s2)
+{
+    if(s1.size() < s2.size())
+        return false;
+
+    int search_length = s2.size();
+    int fin = (int)s1.size()-1;
+
+    int terminate = fin - search_length;
+
+    std::cout << "terminate on " << terminate << std::endl;
+    std::cout << "str len " << s1.length() << std::endl;
+
+    //for(int i=0; i < (int)s1.size() ; i++)
+    for(int i = fin; i >= terminate && i >= 0; i--)
+    {
+        if(s1[i] != s2[i])
+            return false;
+    }
+
+    return true;
 }
 
 struct match
@@ -112,6 +142,120 @@ struct match
 
     bool hit = false;
 };
+
+bool ends_with(result_info& inf, const std::string& s1, const std::string& s2)
+{
+    int rlen = inf.result;
+    int idx = inf.idx;
+    int idy = inf.idy;
+
+    //const std::string& s1 = m.s1->data;
+    //const std::string& s2 = m.s2->data;
+
+    if(idx == 0 || idy == 0)
+        return false;
+
+    int base_idx = idx - rlen;
+    int base_idy = idy - rlen;
+
+    for(int i=base_idx, j = base_idy; i < base_idx + rlen && j < base_idy + rlen; i++, j++)
+    {
+        std::cout << "i " << i << " j " << j << std::endl;
+
+        if(s1[i] != s2[j])
+            return false;
+    }
+
+    return true;
+}
+
+result_info overlap_strength(const std::string& s1, const std::string& s2)
+{
+    result_info inf = lcsubstr(s1, s2);
+
+    //if(inf.result != inf.idx && inf.result != inf.idy)
+
+    /*if(inf.idx != s1.size() && inf.idy != s1.size())
+    {
+        inf.result = 0;
+    }*/
+
+    //std::cout << "ends1 " << s1 << std::endl;
+    //std::cout << "ends2 " << s2 << std::endl;
+
+    /*std::cout << "rlen " << inf.result << std::endl;
+    std::cout << "x " << inf.idx << std::endl;
+    std::cout << "y " << inf.idy << std::endl;*/
+
+    if(ends_with(inf, s1, s2))
+    {
+        inf.which = 0;
+
+        int rlen = inf.result;
+        int idx = inf.idx;
+        int idy = inf.idy;
+
+        //const std::string& s1 = m.s1->data;
+        //const std::string& s2 = m.s2->data;
+
+        std::string str;
+
+        //for(int i=idx-1; i < (int)s1.size(); i++)
+
+        /*for(int i=idx-1, j = idy - 1; i < (int)s1.size() && j < (int)s2.size(); i++, j++)
+        {
+            str.push_back(s1[i]);
+        }*/
+
+        int base_idx = idx - rlen;
+        int base_idy = idy - rlen;
+
+        for(int i=base_idx, j = base_idy; i < base_idx + rlen && j < base_idy + rlen; i++, j++)
+        {
+            str.push_back(s1[i]);
+        }
+
+        if(base_idx > 0 && base_idy > 0)
+            throw std::runtime_error("whelp");
+
+        //std::cout << "bidx " << base_idx << std::endl;
+
+        std::string first;
+
+        for(int i=0; i < base_idx; i++)
+        {
+            first.push_back(s1[i]);
+        }
+
+        for(int i=0; i < base_idy; i++)
+        {
+            first.push_back(s2[i]);
+        }
+
+        str = first + str;
+
+        for(int i=base_idy + rlen; i < (int)s2.size(); i++)
+        {
+            str = str + s2[i];
+        }
+
+        for(int i=base_idx + rlen; i < (int)s1.size(); i++)
+        {
+            str = str + s1[i];
+        }
+
+        inf.substring = str;
+
+        //std::cout << "got substr " << inf.substring << std::endl;
+    }
+    else
+    {
+        inf.result = 0;
+        inf.which = -1;
+    }
+
+    return inf;
+}
 
 #if 0
 struct person
@@ -153,38 +297,39 @@ std::vector<std::pair<T,T>> stable_roomate(const std::vector<T>& data)
 }
 #endif // 0
 
-void merge_together(match& in)
+bool merge_together(match& in)
 {
-    /*if(in.s2->data.find(in.s1->data) != std::string::npos)
-    {
-        in.s1->data = in.s2->data;
-        return;
-    }
+    //std::cout << "x " << in.inf.idx << " s " << in.s1->data.size() << " for " << in.s1->data << std::endl;
+    //std::cout << "y " << in.inf.idy << " s " << in.s2->data.size() << " for " << in.s2->data << std::endl;
 
-    if(in.s1->data.find(in.s2->data) != std::string::npos)
-    {
-        in.s2->data = in.s1->data;
-        return;
-    }*/
+    //std::cout << "strn " << in.inf.result << std::endl;
 
-    int which = -1;
-
-    if(in.inf.idx != in.inf.result)
+    //if(in.inf.idx != in.inf.result)
+    /*if(in.inf.idx != in.s1->data.size())
     {
         which = 0;
     }
 
-    if(in.inf.idy != in.inf.result)
+    //if(in.inf.idy != in.inf.result)
+    if(in.inf.idy != in.s2->data.size())
     {
         which = 1;
-    }
+    }*/
 
-    if(in.inf.idx != in.inf.result && in.inf.idy != in.inf.result)
+    int which = in.inf.which;
+
+    if(which == -1)
+        return false;
+
+    /*if(in.inf.idx != in.inf.result && in.inf.idy != in.inf.result)
     {
         throw std::runtime_error("Should not have happened");
-    }
+    }*/
 
-    if(which == 0)
+    std::cout << "merg " << in.s1->data << std::endl;
+    std::cout << "into " << in.s2->data << std::endl;
+
+    /*if(which == 0)
     {
         for(int i=0; i < in.inf.result; i++)
         {
@@ -212,7 +357,50 @@ void merge_together(match& in)
         }
 
         in.s1->data = in.s2->data;
+    }*/
+
+    in.s1->data = in.inf.substring;
+    in.s2->data = in.inf.substring;
+
+    return true;
+}
+
+std::vector<match> sort_overlap(const std::vector<parsed_data*>& all)
+{
+    std::vector<match> matches;
+
+    for(int i=0; i < (int)all.size(); i++)
+    {
+        parsed_data* dat = all[i];
+
+        for(int j=i+1; j < (int)all.size(); j++)
+        {
+            parsed_data* other = all[j];
+
+            if(other == dat)
+                continue;
+
+            if(other->data == dat->data)
+                continue;
+
+            result_info strength = overlap_strength(dat->data, other->data);
+
+            if(strength.result > 0)
+            {
+                match m;
+                m.inf = strength;
+                m.s1 = dat;
+                m.s2 = other;
+                m.hit = false;
+
+                matches.push_back(m);
+            }
+        }
     }
+
+    std::sort(matches.begin(), matches.end(), [](const auto& i1, const auto& i2){return i1.inf.result > i2.inf.result;});
+
+    return matches;
 }
 
 struct parsed_data_manager
@@ -235,43 +423,43 @@ struct parsed_data_manager
         {
             //std::vector<match> all_matches;
 
-            std::vector<match> matches;
-
-            std::vector<parsed_data*> all = p.second;
-
-            for(int i=0; i < (int)all.size(); i++)
+            for(int num = 0; num < p.second.size(); num++)
             {
-                parsed_data* dat = all[i];
+                std::vector<match> matches = sort_overlap(p.second);
 
-                for(int j=i+1; j < (int)all.size(); j++)
+                //if(matches.size() > 1)
+                for(int i=0; i < (int)matches.size(); i++)
                 {
-                    parsed_data* other = all[j];
+                    match& m = matches[0];
 
-                    if(other->data == dat->data)
+                    std::cout << " merg " << m.s1->data << std::endl;
+                    std::cout << " into " << m.s2->data << std::endl;
+
+                    if(!merge_together(matches[0]))
                         continue;
 
-                    result_info strength = overlap_strength(dat->data, other->data);
-
-                    if(strength.result > 0)
-                    {
-                        match m;
-                        m.inf = strength;
-                        m.s1 = dat;
-                        m.s2 = other;
-                        m.hit = false;
-
-                        matches.push_back(m);
-                    }
+                    std::cout <<" gote " << m.s1->data << std::endl;
+                    break;
                 }
             }
 
-            std::sort(matches.begin(), matches.end(), [](const auto& i1, const auto& i2){return i1.inf.result > i2.inf.result;});
+            std::vector<match> matches = sort_overlap(p.second);
+
+            std::cout << "msize " << matches.size() << std::endl;
+
+            for(auto& i : matches)
+            {
+                //std::cout << "Matched " << i.s1->data << " with " << i.s2->data << std::endl;
+
+                std::cout << "f1 " << i.s1->data << std::endl;
+                std::cout << "f2 " << i.s2->data << std::endl;
+            }
 
             ///just realised that its bidirectional
             ///so we just go down the preference list
             ///and then set them to fulfilled
 
-            std::vector<match> final_matches;
+            /*std::vector<match> final_matches;
 
             std::map<parsed_data*, bool> matched;
 
@@ -305,7 +493,7 @@ struct parsed_data_manager
 
                 std::cout << "f1 " << i.s1->data << std::endl;
                 std::cout << "f2 " << i.s2->data << std::endl;
-            }
+            }*/
 
             /*for(auto& i : all_matches)
             {
@@ -328,8 +516,14 @@ int main()
 
     parsed_data s1;
     parsed_data s2;
-    s1.data = "3456";
-    s2.data = "1234";
+    //s1.data = "n asked to so they're thinking like engineering";
+    //s2.data = "thinking like engineering problem";
+
+    s2.data = "like engineering problem";
+    s1.data = "ineering problem - they've been asked to so";
+
+    /*n asked to so they're thinking like engineering
+    thinking like engineering problem*/
 
     result_info test_inf = overlap_strength(s1.data, s2.data);
 
@@ -343,6 +537,18 @@ int main()
     std::cout << "res " << test_inf.result << " idx " << test_inf.idx << " y " << test_inf.idy << std::endl;
 
     std::cout << "pm " << m.s1->data << " m2 " << m.s2->data << std::endl;
+
+    return 0;
+
+
+    /* ineering problem - they've been asked to so
+    like engineering problem*/
+
+    //return ends_with(m);
+
+    //std::cout << ends_with("like engineering problem", "ineering problem - they've been asked to so") << std::endl;
+
+    //return 0;
 
     parsed_data_manager parsed_data_manage;
 
