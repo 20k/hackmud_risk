@@ -37,7 +37,15 @@ struct parsed_data
     std::string data;
 };
 
-int lcsubstr(const std::string& s1, const std::string& s2)
+struct result_info
+{
+    int idx = 0;
+    int idy = 0;
+
+    int result = 0;
+};
+
+result_info lcsubstr(const std::string& s1, const std::string& s2)
 {
     int m = s1.size();
     int n = s2.size();
@@ -55,7 +63,7 @@ int lcsubstr(const std::string& s1, const std::string& s2)
     for(auto& i : LCSuff)
         i.resize(n+1);
 
-    int result = 0;  // To store length of the longest common substring
+    result_info inf;
 
     /* Following steps build LCSuff[m+1][n+1] in bottom up fashion. */
     for (int i=0; i<=m; i++)
@@ -68,29 +76,36 @@ int lcsubstr(const std::string& s1, const std::string& s2)
             else if (s1[i-1] == s2[j-1])
             {
                 LCSuff[i][j] = LCSuff[i-1][j-1] + 1;
-                result = std::max(result, LCSuff[i][j]);
+                //result = std::max(result, LCSuff[i][j]);
+
+                if(LCSuff[i][j] > inf.result)
+                {
+                    inf.result = LCSuff[i][j];
+                    inf.idx = i;
+                    inf.idy = j;
+                }
             }
             else LCSuff[i][j] = 0;
         }
     }
-    return result;
+    return inf;
 }
 
-
-int overlap_strength(const std::string& s1, const std::string& s2)
+result_info overlap_strength(const std::string& s1, const std::string& s2)
 {
-    if(s2.find(s1) != std::string::npos)
-        return s1.size();
+    result_info inf = lcsubstr(s1, s2);
 
-    if(s1.find(s2) != std::string::npos)
-        return s2.size();
+    if(inf.result != inf.idx && inf.result != inf.idy)
+    {
+        inf.result = 0;
+    }
 
-    return lcsubstr(s1, s2);
+    return inf;
 }
 
 struct match
 {
-    int strength = 0;
+    result_info inf;
 
     parsed_data* s1 = nullptr;
     parsed_data* s2 = nullptr;
@@ -138,6 +153,23 @@ std::vector<std::pair<T,T>> stable_roomate(const std::vector<T>& data)
 }
 #endif // 0
 
+void merge_together(match& in)
+{
+    if(in.s2->data.find(in.s1->data) != std::string::npos)
+    {
+        in.s1->data = in.s2->data;
+        return;
+    }
+
+    if(in.s1->data.find(in.s2->data) != std::string::npos)
+    {
+        in.s2->data = in.s1->data;
+        return;
+    }
+
+
+}
+
 struct parsed_data_manager
 {
     std::vector<parsed_data*> data;
@@ -170,12 +202,12 @@ struct parsed_data_manager
                 {
                     parsed_data* other = all[j];
 
-                    int strength = overlap_strength(dat->data, other->data);
+                    result_info strength = overlap_strength(dat->data, other->data);
 
-                    if(strength > 0)
+                    if(strength.result > 0)
                     {
                         match m;
-                        m.strength = strength;
+                        m.inf = strength;
                         m.s1 = dat;
                         m.s2 = other;
                         m.hit = false;
@@ -185,7 +217,7 @@ struct parsed_data_manager
                 }
             }
 
-            std::sort(matches.begin(), matches.end(), [](const auto& i1, const auto& i2){return i1.strength > i2.strength;});
+            std::sort(matches.begin(), matches.end(), [](const auto& i1, const auto& i2){return i1.inf.result > i2.inf.result;});
 
             ///just realised that its bidirectional
             ///so we just go down the preference list
@@ -207,12 +239,16 @@ struct parsed_data_manager
                 matched[i.s2] = true;
 
                 match fin;
-                fin.strength = i.strength;
+                fin.inf = i.inf;
                 fin.s1 = i.s1;
                 fin.s2 = i.s2;
                 fin.hit = true;
 
                 final_matches.push_back(fin);
+
+                ///ok
+                ///we should merge the matches together here
+                ///and then recompute fully
             }
 
             for(auto& i : final_matches)
@@ -241,6 +277,8 @@ int main()
     std::string all_data = read_file_bin("data.txt");
 
     std::vector<std::string> post_split = no_ss_split(all_data, "\n");
+
+    //result_info test_inf = overlap_strength("1234", "3456");
 
     parsed_data_manager parsed_data_manage;
 
