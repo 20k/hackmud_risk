@@ -155,7 +155,7 @@ std::vector<std::pair<T,T>> stable_roomate(const std::vector<T>& data)
 
 void merge_together(match& in)
 {
-    if(in.s2->data.find(in.s1->data) != std::string::npos)
+    /*if(in.s2->data.find(in.s1->data) != std::string::npos)
     {
         in.s1->data = in.s2->data;
         return;
@@ -165,9 +165,54 @@ void merge_together(match& in)
     {
         in.s2->data = in.s1->data;
         return;
+    }*/
+
+    int which = -1;
+
+    if(in.inf.idx != in.inf.result)
+    {
+        which = 0;
     }
 
+    if(in.inf.idy != in.inf.result)
+    {
+        which = 1;
+    }
 
+    if(in.inf.idx != in.inf.result && in.inf.idy != in.inf.result)
+    {
+        throw std::runtime_error("Should not have happened");
+    }
+
+    if(which == 0)
+    {
+        for(int i=0; i < in.inf.result; i++)
+        {
+            in.s1->data.pop_back();
+        }
+
+        for(int i=0; i < (int)in.s2->data.size(); i++)
+        {
+            in.s1->data.push_back(in.s2->data[i]);
+        }
+
+        in.s2->data = in.s1->data;
+    }
+
+    if(which == 1)
+    {
+        for(int i=0; i < in.inf.result; i++)
+        {
+            in.s2->data.pop_back();
+        }
+
+        for(int i=0; i < (int)in.s1->data.size(); i++)
+        {
+            in.s2->data.push_back(in.s1->data[i]);
+        }
+
+        in.s1->data = in.s2->data;
+    }
 }
 
 struct parsed_data_manager
@@ -201,6 +246,9 @@ struct parsed_data_manager
                 for(int j=i+1; j < (int)all.size(); j++)
                 {
                     parsed_data* other = all[j];
+
+                    if(other->data == dat->data)
+                        continue;
 
                     result_info strength = overlap_strength(dat->data, other->data);
 
@@ -278,7 +326,23 @@ int main()
 
     std::vector<std::string> post_split = no_ss_split(all_data, "\n");
 
-    //result_info test_inf = overlap_strength("1234", "3456");
+    parsed_data s1;
+    parsed_data s2;
+    s1.data = "3456";
+    s2.data = "1234";
+
+    result_info test_inf = overlap_strength(s1.data, s2.data);
+
+    match m;
+    m.inf = test_inf;
+    m.s1 = &s1;
+    m.s2 = &s2;
+
+    merge_together(m);
+
+    std::cout << "res " << test_inf.result << " idx " << test_inf.idx << " y " << test_inf.idy << std::endl;
+
+    std::cout << "pm " << m.s1->data << " m2 " << m.s2->data << std::endl;
 
     parsed_data_manager parsed_data_manage;
 
