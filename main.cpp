@@ -478,6 +478,48 @@ std::vector<parsed_data*> get_unique(const std::vector<parsed_data*>& all)
     return rv;
 }
 
+std::vector<parsed_data*> full_chopdown(std::vector<parsed_data*>& in)
+{
+    bool should_go = true;
+
+    std::map<std::string, std::map<std::string, match>> does_not_overlap;
+    std::map<std::string, std::map<std::string, bool>> unseen;
+
+    while(should_go)
+    {
+        std::vector<match> matches = sort_overlap(in, does_not_overlap, unseen);
+
+        //std::cout << "start matches " << matches.size() << std::endl;
+
+        should_go = false;
+
+        for(int i=0; i < (int)matches.size(); i++)
+        {
+            match& m = matches[i];
+
+            //std::cout << " merg " << m.s1->data << std::endl;
+            //std::cout << " into " << m.s2->data << std::endl;
+
+            if(!merge_together(matches[i]))
+                continue;
+
+            should_go = true;
+
+            //std::cout <<" gote " << m.s1->data << std::endl;
+            break;
+        }
+
+        //if(matches.size() <= 1)
+        //    break;
+    }
+
+    //std::vector<match> matches = sort_overlap(p.second);
+
+    std::vector<parsed_data*> dat = get_unique(in);
+
+    return dat;
+}
+
 struct parsed_data_manager
 {
     std::vector<parsed_data*> data;
@@ -494,11 +536,13 @@ struct parsed_data_manager
 
     void dedup_scripts()
     {
+        std::vector<parsed_data*> post_within_script;
+
         for(auto& p : script_map)
         {
             //std::vector<match> all_matches;
 
-            bool should_go = true;
+            /*bool should_go = true;
 
             //for(int num = 0; num < p.second.size()*5; num++)
 
@@ -535,16 +579,23 @@ struct parsed_data_manager
 
             //std::vector<match> matches = sort_overlap(p.second);
 
-            std::vector<parsed_data*> dat = get_unique(p.second);
+            std::vector<parsed_data*> dat = get_unique(p.second);*/
+
+            std::vector<parsed_data*> dat = full_chopdown(p.second);
 
             std::cout << "msize " << dat.size() << std::endl;
 
-            for(auto& i : dat)
+            for(parsed_data* i : dat)
             {
                 //std::cout << "Matched " << i.s1->data << " with " << i.s2->data << std::endl;
 
-                std::cout << "f1 " << i->data << std::endl;
+                std::cout << "f1 " << i->data << " CONFIDENCE " << i->confidence << " PIECES " << i->num_pieces << std::endl;
                 //std::cout << "f2 " << i.s2->data << std::endl;
+            }
+
+            for(auto& i : dat)
+            {
+                post_within_script.push_back(i);
             }
 
             ///just realised that its bidirectional
@@ -594,6 +645,13 @@ struct parsed_data_manager
 
             ///ok so
             ///we want to compute the best match
+        }
+
+        std::vector<parsed_data*> horseshit = full_chopdown(post_within_script);
+
+        for(auto& i : horseshit)
+        {
+            std::cout << "f3 " << i->data << " CONFIDENCE " << i->confidence << " PIECES " << i->num_pieces << std::endl;
         }
 
         std::cout << "hi\n";
