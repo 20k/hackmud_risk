@@ -36,6 +36,9 @@ struct parsed_data
 {
     std::string script_name;
     std::string data;
+
+    int confidence = 0;
+    int num_pieces = 1;
 };
 
 struct result_info
@@ -146,6 +149,9 @@ struct match
 
 bool ends_with(result_info& inf, const std::string& s1, const std::string& s2)
 {
+    if(s1 == s2)
+        return true;
+
     int rlen = inf.result;
     int idx = inf.idx;
     int idy = inf.idy;
@@ -221,71 +227,10 @@ result_info overlap_strength(const std::string& s1, const std::string& s2)
 
     if(ends_with(inf, s1, s2))
     {
+
+
+
         inf.which = 0;
-
-        int rlen = inf.result;
-        int idx = inf.idx;
-        int idy = inf.idy;
-
-        //const std::string& s1 = m.s1->data;
-        //const std::string& s2 = m.s2->data;
-
-        std::string str;
-
-        //for(int i=idx-1; i < (int)s1.size(); i++)
-
-        /*for(int i=idx-1, j = idy - 1; i < (int)s1.size() && j < (int)s2.size(); i++, j++)
-        {
-            str.push_back(s1[i]);
-        }*/
-
-        int base_idx = idx - rlen;
-        int base_idy = idy - rlen;
-
-        for(int i=base_idx, j = base_idy; i < base_idx + rlen && j < base_idy + rlen; i++, j++)
-        {
-            str.push_back(s1[i]);
-        }
-
-        if(base_idx > 0 && base_idy > 0)
-        {
-            std::cout << "hi " << s1 << " s1" << std::endl;
-            std::cout << "hi " << s2 << " s2" << std::endl;
-
-            std::cout << "len " << rlen << std::endl;
-
-            throw std::runtime_error("whelp");
-        }
-
-        //std::cout << "bidx " << base_idx << std::endl;
-
-        std::string first;
-
-        for(int i=0; i < base_idx; i++)
-        {
-            first.push_back(s1[i]);
-        }
-
-        for(int i=0; i < base_idy; i++)
-        {
-            first.push_back(s2[i]);
-        }
-
-        str = first + str;
-
-        for(int i=base_idy + rlen; i < (int)s2.size(); i++)
-        {
-            str = str + s2[i];
-        }
-
-        for(int i=base_idx + rlen; i < (int)s1.size(); i++)
-        {
-            str = str + s1[i];
-        }
-
-        inf.substring = str;
-
-        //std::cout << "got substr " << inf.substring << std::endl;
     }
     else
     {
@@ -355,61 +300,81 @@ bool merge_together(match& in)
         which = 1;
     }*/
 
-    int which = in.inf.which;
-
-    if(which == -1)
+    if(in.inf.which == -1)
         return false;
 
-    /*if(in.inf.idx != in.inf.result && in.inf.idy != in.inf.result)
+    //inf.which = 0;
+
+    int rlen = in.inf.result;
+    int idx = in.inf.idx;
+    int idy = in.inf.idy;
+
+    std::string str;
+
+    int base_idx = idx - rlen;
+    int base_idy = idy - rlen;
+
+    for(int i=base_idx, j = base_idy; i < base_idx + rlen && j < base_idy + rlen; i++, j++)
     {
-        throw std::runtime_error("Should not have happened");
-    }*/
-
-    //std::cout << "merg " << in.s1->data << std::endl;
-    //std::cout << "into " << in.s2->data << std::endl;
-
-    /*if(which == 0)
-    {
-        for(int i=0; i < in.inf.result; i++)
-        {
-            in.s1->data.pop_back();
-        }
-
-        for(int i=0; i < (int)in.s2->data.size(); i++)
-        {
-            in.s1->data.push_back(in.s2->data[i]);
-        }
-
-        in.s2->data = in.s1->data;
+        str.push_back(in.s1->data[i]);
     }
 
-    if(which == 1)
+    if(base_idx > 0 && base_idy > 0)
     {
-        for(int i=0; i < in.inf.result; i++)
-        {
-            in.s2->data.pop_back();
-        }
+        /*std::cout << "hi " << s1 << " s1" << std::endl;
+        std::cout << "hi " << s2 << " s2" << std::endl;
 
-        for(int i=0; i < (int)in.s1->data.size(); i++)
-        {
-            in.s2->data.push_back(in.s1->data[i]);
-        }
+        std::cout << "len " << rlen << std::endl;*/
 
-        in.s1->data = in.s2->data;
-    }*/
+        throw std::runtime_error("whelp");
+    }
+
+    //std::cout << "bidx " << base_idx << std::endl;
+
+    std::string first;
+
+    for(int i=0; i < base_idx; i++)
+    {
+        first.push_back(in.s1->data[i]);
+    }
+
+    for(int i=0; i < base_idy; i++)
+    {
+        first.push_back(in.s2->data[i]);
+    }
+
+    str = first + str;
+
+    for(int i=base_idy + rlen; i < (int)in.s2->data.size(); i++)
+    {
+        str = str + in.s2->data[i];
+    }
+
+    for(int i=base_idx + rlen; i < (int)in.s1->data.size(); i++)
+    {
+        str = str + in.s1->data[i];
+    }
+
+    in.inf.substring = str;
 
     in.s1->data = in.inf.substring;
     in.s2->data = in.inf.substring;
 
+    in.s1->confidence += in.inf.result;
+    in.s1->num_pieces++;
+
+    in.s2->confidence += in.inf.result;
+    in.s2->num_pieces++;
+
     return true;
 }
 
-std::vector<match> sort_overlap(const std::vector<parsed_data*>& all, std::map<std::string, std::map<std::string, bool>>& does_not_overlap)
+std::vector<match> sort_overlap(const std::vector<parsed_data*>& all, std::map<std::string, std::map<std::string, match>>& does_not_overlap, std::map<std::string, std::map<std::string, bool>>& unseen)
 {
     std::vector<match> matches;
 
-    std::map<std::string, bool> any_seen;
-    std::map<std::string, bool> any_passed;
+    //std::map<std::string, bool> any_seen;
+    //std::map<std::string, bool> any_passed;
 
     for(int i=0; i < (int)all.size(); i++)
     {
@@ -419,8 +384,8 @@ std::vector<match> sort_overlap(const std::vector<parsed_data*>& all, std::map<s
         {
             parsed_data* other = all[j];
 
-            any_seen[dat->data] = true;
-            any_seen[other->data] = true;
+            //any_seen[dat->data] = true;
+            //any_seen[other->data] = true;
 
             if(other == dat)
                 continue;
@@ -428,7 +393,13 @@ std::vector<match> sort_overlap(const std::vector<parsed_data*>& all, std::map<s
             if(other->data == dat->data)
                 continue;
 
-            if(does_not_overlap[dat->data][other->data])
+            /*if(does_not_overlap[dat->data].find(other->data) != does_not_overlap[dat->data].end())
+            {
+                matches.push_back(does_not_overlap[dat->data][other->data]);
+                continue;
+            }*/
+
+            if(unseen[dat->data][other->data])
                 continue;
 
             //std::cout << "hi " << other->data << std::endl;
@@ -437,8 +408,8 @@ std::vector<match> sort_overlap(const std::vector<parsed_data*>& all, std::map<s
 
             if(strength.result > 0)
             {
-                any_passed[dat->data] = true;
-                any_passed[other->data] = true;
+                //any_passed[dat->data] = true;
+                //any_passed[other->data] = true;
 
                 match m;
                 m.inf = strength;
@@ -447,10 +418,12 @@ std::vector<match> sort_overlap(const std::vector<parsed_data*>& all, std::map<s
                 m.hit = false;
 
                 matches.push_back(m);
+
+                does_not_overlap[dat->data][other->data] = m;
             }
             else
             {
-                does_not_overlap[dat->data][other->data] = true;
+                unseen[dat->data][other->data] = true;
             }
         }
     }
@@ -529,17 +502,17 @@ struct parsed_data_manager
 
             //for(int num = 0; num < p.second.size()*5; num++)
 
-            std::map<std::string, std::map<std::string, bool>> does_not_overlap;
+            std::map<std::string, std::map<std::string, match>> does_not_overlap;
+            std::map<std::string, std::map<std::string, bool>> unseen;
 
             while(should_go)
             {
-                std::vector<match> matches = sort_overlap(p.second, does_not_overlap);
+                std::vector<match> matches = sort_overlap(p.second, does_not_overlap, unseen);
 
                 //std::cout << "start matches " << matches.size() << std::endl;
 
                 should_go = false;
 
-                //if(matches.size() > 1)
                 for(int i=0; i < (int)matches.size(); i++)
                 {
                     match& m = matches[i];
@@ -644,7 +617,7 @@ std::string full_test(const std::string& us1, const std::string& us2)
 
     merge_together(m);
 
-    return test_inf.substring;
+    return m.inf.substring;
 }
 
 void tests()
