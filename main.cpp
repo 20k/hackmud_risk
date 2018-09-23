@@ -640,6 +640,8 @@ ogs_playing? ## Not f*/
 
     assert(full_test(". Petra permitt", "rators. Petra permitt") == "rators. Petra permitt");
 
+    //assert(full_test("n asked to solve an engineering problem, so they're thinking like engineering probl", "problem, so them - them - they") == "n asked to solve an engineering problem, so they're thinking like engineering problem, so them - them - they");
+
     //std::cout << "pmerge " << full_test("1234", "3456") << " well" << std::endl;
 }
 
